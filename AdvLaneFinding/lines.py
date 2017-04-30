@@ -5,84 +5,6 @@ import os
 
 import AdvLaneFinding.utils as utils
 
-class Line(object):
-    """
-        Line holder object.
-    """
-
-    def __init__(self):
-        """
-            Returns a line object.
-        """
-        self.detected = False
-        self.recent_xfitted = []
-        self.bestx = None
-        self.recent_fit = []
-        self.best_fit = None
-        self.current_fit = np.array([0, 0, 0], dtype='float')
-        self.radius_of_curvature = None
-        self.line_base_pos = None
-        self.diffs = np.array([0, 0, 0], dtype='float')
-        self.allx = None
-        self.ally = None
-        self.last_fit_suspitious = False
-        self.recent_curvatures = []
-        self.mean_curvature = None
-        self.recent_car_offsets = []
-        self.mean_car_offset = None
-        self.output_frames = 0
-
-    def was_detected(self, next_x, next_curvature, next_fit, next_other_curvature, next_other_fit, other_line_not_detected=False):
-        """
-            Evaluates if the line has been detected.
-        """
-        prev_detected = self.detected
-        this_detected = self.best_fit is None or \
-            ((np.abs(self.radius_of_curvature - next_curvature) < 5000 \
-            or (self.radius_of_curvature > 5000 and next_curvature > 5000)) and \
-            (np.abs(self.current_fit - next_fit) < [0.005, 2.0, 150.0]).all() and \
-            (np.abs(next_other_curvature - next_curvature) < 5000  or \
-            (next_other_curvature > 5000 and next_curvature > 5000)) and \
-            (np.abs(next_other_fit[0] - next_fit[0]) < 0.001) and \
-            (np.abs(next_other_fit[1] - next_fit[1]) < 0.5))
-        self.detected = not prev_detected or not other_line_not_detected and this_detected
-
-        if self.detected:
-            if len(self.recent_xfitted) >= 4:
-                self.recent_xfitted.pop(0)
-            self.recent_xfitted.append(next_x)
-            self.bestx = np.mean(self.recent_xfitted, axis=0)
-            if len(self.recent_fit) >= 4 and not self.last_fit_suspitious:
-                self.recent_fit.pop(0)
-            if self.last_fit_suspitious:
-                self.recent_fit.pop()
-            self.last_fit_suspitious = not this_detected
-            self.recent_fit.append(next_fit)
-            self.best_fit = np.mean(self.recent_fit, axis=0)
-            self.current_fit = next_fit
-            self.radius_of_curvature = next_curvature
-
-    def set_output_params(self, curvature, car_offset):
-        """
-            Sets the output paramters.
-        """
-        if self.detected:
-            if len(self.recent_curvatures) >= 4 and not self.last_fit_suspitious:
-                self.recent_curvatures.pop(0)
-                self.recent_car_offsets.pop(0)
-            if self.last_fit_suspitious:
-                self.recent_car_offsets.pop()
-                self.recent_curvatures.pop()
-            self.recent_curvatures.append(curvature)
-            self.recent_car_offsets.append(car_offset)
-            if self.output_frames == 0:
-                self.mean_curvature = np.mean(self.recent_curvatures)
-                self.mean_car_offset = np.mean(self.recent_car_offsets)
-            if self.output_frames >= 4:
-                self.output_frames = 0
-            else:
-                self.output_frames += 1
-
 class LineFinder(object):
     """
         A lane line finder utility.
@@ -259,4 +181,81 @@ class LineFinder(object):
         cv2.putText(result, "Right curvature: " + str(self.right_line.mean_curvature), (10, 110), \
             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
         return output, result
-            
+
+class Line(object):
+    """
+        Line holder object.
+    """
+
+    def __init__(self):
+        """
+            Returns a line object.
+        """
+        self.detected = False
+        self.recent_xfitted = []
+        self.bestx = None
+        self.recent_fit = []
+        self.best_fit = None
+        self.current_fit = np.array([0, 0, 0], dtype='float')
+        self.radius_of_curvature = None
+        self.line_base_pos = None
+        self.diffs = np.array([0, 0, 0], dtype='float')
+        self.allx = None
+        self.ally = None
+        self.last_fit_suspitious = False
+        self.recent_curvatures = []
+        self.mean_curvature = None
+        self.recent_car_offsets = []
+        self.mean_car_offset = None
+        self.output_frames = 0
+
+    def was_detected(self, next_x, next_curvature, next_fit, next_other_curvature, next_other_fit, other_line_not_detected=False):
+        """
+            Evaluates if the line has been detected.
+        """
+        prev_detected = self.detected
+        this_detected = self.best_fit is None or \
+            ((np.abs(self.radius_of_curvature - next_curvature) < 5000 \
+            or (self.radius_of_curvature > 5000 and next_curvature > 5000)) and \
+            (np.abs(self.current_fit - next_fit) < [0.005, 2.0, 150.0]).all() and \
+            (np.abs(next_other_curvature - next_curvature) < 5000  or \
+            (next_other_curvature > 5000 and next_curvature > 5000)) and \
+            (np.abs(next_other_fit[0] - next_fit[0]) < 0.001) and \
+            (np.abs(next_other_fit[1] - next_fit[1]) < 0.5))
+        self.detected = not prev_detected or not other_line_not_detected and this_detected
+
+        if self.detected:
+            if len(self.recent_xfitted) >= 4:
+                self.recent_xfitted.pop(0)
+            self.recent_xfitted.append(next_x)
+            self.bestx = np.mean(self.recent_xfitted, axis=0)
+            if len(self.recent_fit) >= 4 and not self.last_fit_suspitious:
+                self.recent_fit.pop(0)
+            if self.last_fit_suspitious:
+                self.recent_fit.pop()
+            self.last_fit_suspitious = not this_detected
+            self.recent_fit.append(next_fit)
+            self.best_fit = np.mean(self.recent_fit, axis=0)
+            self.current_fit = next_fit
+            self.radius_of_curvature = next_curvature
+
+    def set_output_params(self, curvature, car_offset):
+        """
+            Sets the output paramters.
+        """
+        if self.detected:
+            if len(self.recent_curvatures) >= 4 and not self.last_fit_suspitious:
+                self.recent_curvatures.pop(0)
+                self.recent_car_offsets.pop(0)
+            if self.last_fit_suspitious:
+                self.recent_car_offsets.pop()
+                self.recent_curvatures.pop()
+            self.recent_curvatures.append(curvature)
+            self.recent_car_offsets.append(car_offset)
+            if self.output_frames == 0:
+                self.mean_curvature = np.mean(self.recent_curvatures)
+                self.mean_car_offset = np.mean(self.recent_car_offsets)
+            if self.output_frames >= 4:
+                self.output_frames = 0
+            else:
+                self.output_frames += 1   

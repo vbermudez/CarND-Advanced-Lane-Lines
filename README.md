@@ -94,15 +94,24 @@ I verified that my perspective transform was working as expected by drawing the 
 
 #### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial.
 
-Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
+I used a histogramover the lower half of the image to find the peaks and, hence, the base of the two lane lines. Below, you can find the histogram superimposed to the wapre image resulting from the previous step. The function `histogram()`, in lines between 20 and 30 from [lines.py](./AdvLaneFinding/lines.py), returns this histogram.
 
 ![histogram]
+
+Then, at the base of each line, a sliding window is used to find the pixels belonging to that lane line. This technique is used for both the left and the right lane lines and can be found at function `find_lines()` (lines 47 throigh 97 in [lines.py](./AdvLaneFinding/lines.py)). Example below.
+
 ![sliding_windows]
-![lines]
+
 
 #### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
-I did this in lines # through # in my code in `my_other_file.py`
+I calculated the curvature radius in the function `find_lines()` (lines 147 throigh 153 in [lines.py](./AdvLaneFinding/lines.py)). Taking the detected left and right line pixels and multiplying them by a pixel to meter conversions and then fiting polynomials to the result points.
+
+To find the car offset from the center I got the mean of the fits of both lane lines and substracted the half with of the image, then multplied the result by the pixel to meter conversion (line 155 in [lines.py](./AdvLaneFinding/lines.py)).
+
+Example of the result below.
+
+![lines]
 
 #### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 

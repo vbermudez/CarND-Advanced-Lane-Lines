@@ -22,7 +22,7 @@ class Processor(object):
         self.M = M
         self.Minv = Minv
 
-    def process(self, img):
+    def process(self, img, name='output.jpg', draw=False):
         """
             Processes an image.
         """
@@ -33,7 +33,7 @@ class Processor(object):
         s_channel_thresh = self.thresh.threshold(s_channel, thresh=(170, 255))
         combined = self.thresh.combine_two(s_channel_thresh, sobel)
         warped = self.trans.warp(combined)
-        out_img, result = self.lines.find_lines(warped, undist, self.M, self.Minv)
+        out_img, result = self.lines.find_lines(warped, undist, self.M, self.Minv, name, draw)
         return result
 
 def pipeline():
@@ -50,6 +50,26 @@ def pipeline():
     output = video.fl_image(proc.process)
     output.write_videofile('./output.mp4', audio=False)
 
+def test_pipeline():
+    """
+        Tests the pipelin with static images
+    """
+    cal = Calibrator()
+    ret, mtx, dist, rvecs, tvecs = cal.calibrate()
+    trans = Transformer(mtx, dist)
+    thresh = Thresholder()
+    lines = LineFinder()
+    proc = Processor(thresh, trans, lines)
+    path = './test_images'
+    out_path = './output_images'
+    for img_name in utils.list_dir(path):
+        base_path, name = os.path.split(img_name)
+        print('Processing ' + name + '...')
+        img = utils.read_image(img_name)
+        result = proc.process(img, 'output_' + name, True)
+        utils.write_image(result, os.path.join(out_path, 'result_' + name))
+
 if __name__ == "__main__":
+    # test_pipeline()
     pipeline()
 
