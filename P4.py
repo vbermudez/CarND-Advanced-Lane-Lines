@@ -1,4 +1,5 @@
 import os
+import numpy as np
 from moviepy.editor import VideoFileClip
 
 from AdvLaneFinding.camera import Calibrator
@@ -18,22 +19,33 @@ class Processor(object):
         self.thresh = thresh
         self.trans = trans
         self.lines = lines
-        M, Minv = self.trans.get_matrices()
-        self.M = M
-        self.Minv = Minv
 
     def process(self, img, name='output.jpg', draw=False):
         """
             Processes an image.
         """
-        undist = self.trans.undistort(img)
+        gblur = utils.gaussian_blur(img)
+        
+        undist = self.trans.undistort(gblur)
         sobel = self.thresh.sobel(undist)
         hls = utils.rgb2hls(undist)
         s_channel = utils.select_channel(hls)
         s_channel_thresh = self.thresh.threshold(s_channel, thresh=(170, 255))
-        combined = self.thresh.combine_two(s_channel_thresh, sobel)
-        warped = self.trans.warp(combined)
-        out_img, result = self.lines.find_lines(warped, undist, self.M, self.Minv, name, draw)
+
+        l_channel = utils.select_channel(hls, 'l')
+        l_channel_thresh = self.thresh.threshold(l_channel, thresh=(170, 255))
+        gray_thrsh = self.thresh.gray_threshold(undist)
+        white_yellow = utils.extract_white_yellow(undist)
+
+        combined = np.zeros_like(s_channel_thresh)
+        combined[(white_yellow == 255) | ((s_channel_thresh == 1) & \
+            (l_channel_thresh == 1)) | ((sobel == 1) & (gray_thrsh == 1)) | \
+            (l_channel_thresh == 1)] = 1
+
+        # combined = self.thresh.combine_two(s_channel_thresh, sobel)
+        region = utils.get_region(combined)
+        warped = self.trans.warp(region)
+        result = self.lines.find_lines(warped, img, name, draw)
         return result
 
 def pipeline():
@@ -44,7 +56,7 @@ def pipeline():
     ret, mtx, dist, rvecs, tvecs = cal.calibrate()
     trans = Transformer(mtx, dist)
     thresh = Thresholder()
-    lines = LineFinder()
+    lines = LineFinder(trans)
     proc = Processor(thresh, trans, lines)
     video = VideoFileClip('./project_video.mp4')
     output = video.fl_image(proc.process)
@@ -58,7 +70,7 @@ def test_pipeline():
     ret, mtx, dist, rvecs, tvecs = cal.calibrate()
     trans = Transformer(mtx, dist)
     thresh = Thresholder()
-    lines = LineFinder()
+    lines = LineFinder(trans)
     proc = Processor(thresh, trans, lines)
     path = './test_images'
     out_path = './output_images'

@@ -21,6 +21,12 @@ def rgb2hls(img):
     """
     return cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
 
+def rgb2hsv(img):
+    """
+        Converts to HSV color space.
+    """
+    return cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+
 def select_channel(img, channel='s'):
     """
         Select a channel from a HLS image.
@@ -32,6 +38,58 @@ def select_channel(img, channel='s'):
     elif channel == 's':
         ich = 2
     return img[:, :, ich]
+
+def extract_white_yellow(img):
+    """
+        Extracts white and yellow pixels.
+    """
+    hsv = rgb2hsv(img)
+    l_yellow = np.array([0, 100, 100], dtype=np.uint8)
+    u_yellow = np.array([190, 250, 255], dtype=np.uint8)
+    l_white = np.array([255, 255, 255], dtype=np.uint8)
+    u_white =np.array([200, 200, 200], dtype=np.uint8)
+    white = cv2.inRange(img, u_white, l_white)
+    yellow = cv2.inRange(hsv, l_yellow, u_yellow)
+    return cv2.bitwise_or(white, yellow)
+
+def gaussian_blur(img, kernel_size=5):
+    """
+        Applies a Gaussian Noise kernel
+    """
+    return cv2.GaussianBlur(img, (kernel_size, kernel_size), 0)
+
+def get_region(image):
+    """
+        Returns the part which is likely to contain lane lines.
+    """
+    bottom_left = (image.shape[1] * .15, image.shape[0])
+    bottom_right = (image.shape[1] * .93, image.shape[0])
+    top_left = (image.shape[1] * .4, image.shape[0] / 2)
+    top_right = (image.shape[1] * .6, image.shape[0] / 2)
+    white = np.zeros_like(image)
+    points = np.array([[bottom_left, top_left, top_right, bottom_right]], dtype=np.int32)
+    cv2.fillPoly(white, points, 255)
+    return cv2.bitwise_and(image, white)
+
+def remove_atypical(x, y, perc=5, horitzontal=True):
+    """
+        Removes atypical values based on percentile.
+    """
+    if len(x) == 0 or len(y) == 0:
+        return x, y
+
+    x = np.array(x)
+    y = np.array(y)
+
+    if horitzontal:
+        lower_bound = np.percentile(x, perc)
+        upper_bound = np.percentile(x, 100 - perc)
+        selection = (x >= lower_bound) & (x <= upper_bound)
+    else:
+        lower_bound = np.percentile(y, perc)
+        upper_bound = np.percentile(y, 100 - perc)
+        selection = (y >= lower_bound) & (y <= upper_bound)
+    return x[selection], y[selection]
 
 def write_image(img, path):
     """

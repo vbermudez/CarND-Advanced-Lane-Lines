@@ -52,5 +52,17 @@ class Transformer(object):
             gray = img
         img_size = (gray.shape[1], gray.shape[0])
         M, Minv = self.get_matrices()
-        return cv2.warpPerspective(img, M, img_size)
+        return cv2.warpPerspective(img, M, img_size, flags=cv2.INTER_LINEAR)
+
+    def unwarp(self, img, grayscale=False):
+        """
+            Unwarps an image
+        """
+        if grayscale:
+            gray = utils.grayscale(img)
+        else:
+            gray = img
+        img_size = (gray.shape[1], gray.shape[0])
+        M, Minv = self.get_matrices()
+        return cv2.warpPerspective(img, Minv, img_size, flags=cv2.INTER_LINEAR)
 

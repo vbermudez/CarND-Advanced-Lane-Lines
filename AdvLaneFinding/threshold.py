@@ -102,7 +102,8 @@ class Thresholder(object):
         """
         if tuples:
             combined = np.zeros_like(second[1])
-            combined[((first[0] == 1) & (first[1] == 1)) | ((second[0] == 1) & (second[1] == 1))] = 1
+            combined[((first[0] == 1) & (first[1] == 1)) | \
+                ((second[0] == 1) & (second[1] == 1))] = 1
         else:
             combined = np.zeros_like(second)
             combined[(first == 1) | (second == 1)] = 1
