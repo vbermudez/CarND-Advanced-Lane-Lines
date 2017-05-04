@@ -24,28 +24,44 @@ class Processor(object):
         """
             Processes an image.
         """
-        gblur = utils.gaussian_blur(img)
-        
-        undist = self.trans.undistort(gblur)
-        sobel = self.thresh.sobel(undist)
-        hls = utils.rgb2hls(undist)
-        s_channel = utils.select_channel(hls)
-        s_channel_thresh = self.thresh.threshold(s_channel, thresh=(170, 255))
-
-        l_channel = utils.select_channel(hls, 'l')
-        l_channel_thresh = self.thresh.threshold(l_channel, thresh=(170, 255))
-        gray_thrsh = self.thresh.gray_threshold(undist)
-        white_yellow = utils.extract_white_yellow(undist)
-
-        combined = np.zeros_like(s_channel_thresh)
-        combined[(white_yellow == 255) | ((s_channel_thresh == 1) & \
-            (l_channel_thresh == 1)) | ((sobel == 1) & (gray_thrsh == 1)) | \
-            (l_channel_thresh == 1)] = 1
-
+        # gblur = utils.gaussian_blur(img)
+        # undist = self.trans.undistort(gblur)
+        undist = self.trans.undistort(img)
+        # sobel = self.thresh.sobel(undist)
+        # hls = utils.rgb2hls(undist)
+        # s_channel = utils.select_channel(hls)
+        # s_channel_thresh = self.thresh.threshold(s_channel, thresh=(170, 255))
         # combined = self.thresh.combine_two(s_channel_thresh, sobel)
-        region = utils.get_region(combined)
-        warped = self.trans.warp(region)
-        result = self.lines.find_lines(warped, img, name, draw)
+
+        mag = self.thresh.grad_magnitude(undist, 5, (130, 255))
+        equ = utils.equalize(undist)
+        color_thresh = self.thresh.threshold(equ, (251, 255))
+        combined = self.thresh.combine_two(mag, color_thresh)
+
+        # r_channel = utils.select_channel(undist, 'rgb', 'r')
+        # r_channel_thresh = self.thresh.threshold(r_channel, thresh=(170, 255))
+        # luv = utils.rgb2luv(undist)
+        # l_channel = utils.select_channel(luv, 'luv', 'l')
+        # l_channel_thresh = self.thresh.threshold(l_channel, thresh=(170, 255))
+        # lab = utils.rgb2lab(undist)
+        # b_channel = utils.select_channel(lab, 'lab', 'l')
+        # b_channel_thresh = self.thresh.threshold(b_channel, thresh=(170, 255))
+        # l_channel = utils.select_channel(hls, 'l')
+        # l_channel_thresh = self.thresh.threshold(l_channel, thresh=(170, 255))
+        
+        # gray_thrsh = self.thresh.gray_threshold(undist)
+        # white_yellow = utils.extract_white_yellow(undist)
+        # combined = np.zeros_like(s_channel_thresh)
+        # combined[(white_yellow == 255) | ((s_channel_thresh == 1) & \
+        #     (l_channel_thresh == 1)) | ((sobel == 1) & (gray_thrsh == 1)) | \
+        #     (l_channel_thresh == 1)] = 1
+        
+        
+        # region = utils.get_region(combined)
+        # warped = self.trans.warp(region)
+        warped = self.trans.warp(combined)
+        # result = self.lines.find_lines(warped, img, name, draw)
+        result = self.lines.process_image_ex(warped, img, combined, name, draw)
         return result
 
 def pipeline():

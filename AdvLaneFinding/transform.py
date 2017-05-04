@@ -33,8 +33,10 @@ class Transformer(object):
         """
             Returns the perspective matrices.
         """
-        src = np.float32([[595.0, 450.0], [259.0, 687.0], [1056.0, 687.0], [687.0, 450.0]])
-        dst = np.float32([[259.0, 0.0], [259.0, 720.0], [1056.0, 720.0], [1056.0, 0.0]])
+        # src = np.float32([[595.0, 450.0], [259.0, 687.0], [1056.0, 687.0], [687.0, 450.0]])
+        # dst = np.float32([[259.0, 0.0], [259.0, 720.0], [1056.0, 720.0], [1056.0, 0.0]])
+        src = np.float32([[1030, 670], [712, 468], [570, 468], [270, 670]])
+        dst = np.float32([[1010, 720], [1010, 0], [280, 0], [280, 720]])
         M = cv2.getPerspectiveTransform(src, dst)
         Minv = cv2.getPerspectiveTransform(dst, src)
         return M, Minv

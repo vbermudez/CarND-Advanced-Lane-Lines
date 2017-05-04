@@ -15,6 +15,14 @@ def grayscale(img):
     """
     return cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
+def thresh(img, thresh_min, thresh_max):
+    """
+         Applies the specified threshold to an image.
+    """
+    ret = np.zeros_like(img)
+    ret[(img >= thresh_min) & (img <= thresh_max)] = 1
+    return ret
+
 def rgb2hls(img):
     """
         Converts to HLS color space.
@@ -27,16 +35,23 @@ def rgb2hsv(img):
     """
     return cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
 
-def select_channel(img, channel='s'):
+def rgb2lab(img):
     """
-        Select a channel from a HLS image.
+        Converts to LAB color space.
     """
-    if channel == 'h':
-        ich = 0
-    elif channel == 'l':
-        ich = 1
-    elif channel == 's':
-        ich = 2
+    return cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
+
+def rgb2luv(img):
+    """
+        Converts to LUV color space.
+    """
+    return cv2.cvtColor(img, cv2.COLOR_RGB2LUV)
+
+def select_channel(img, space='hls', channel='s'):
+    """
+        Select a channel from a image.
+    """
+    ich = space.index(channel)
     return img[:, :, ich]
 
 def extract_white_yellow(img):
@@ -44,13 +59,27 @@ def extract_white_yellow(img):
         Extracts white and yellow pixels.
     """
     hsv = rgb2hsv(img)
-    l_yellow = np.array([0, 100, 100], dtype=np.uint8)
-    u_yellow = np.array([190, 250, 255], dtype=np.uint8)
-    l_white = np.array([255, 255, 255], dtype=np.uint8)
-    u_white =np.array([200, 200, 200], dtype=np.uint8)
-    white = cv2.inRange(img, u_white, l_white)
-    yellow = cv2.inRange(hsv, l_yellow, u_yellow)
-    return cv2.bitwise_or(white, yellow)
+    b = np.zeros((img.shape[0], img.shape[1]))
+    H = hsv[:, :, 0]
+    S = hsv[:, :, 1]
+    V = hsv[:, :, 2]
+    R = img[:, :, 0]
+    G = img[:, :, 1]
+    B = img[:, :, 2]
+    t_yellow_H = thresh(H, 10, 30)
+    t_yellow_S = thresh(S, 50, 255)
+    t_yellow_V = thresh(V, 150, 255)
+    t_white_R = thresh(R, 225, 255)
+    t_white_V = thresh(V, 230, 255)
+    b[(t_yellow_H == 1) & (t_yellow_S == 1) & (t_yellow_V == 1)] = 1
+    b[(t_white_R == 1) | (t_white_V == 1)] = 1
+    return b
+
+def equalize(img):
+    """
+        Equalizes the histogram of an image.
+    """
+    return cv2.equalizeHist(img[:, :, 0])
 
 def gaussian_blur(img, kernel_size=5):
     """
